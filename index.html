@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise de Localização: Jiu-Jitsu Goiânia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <!-- Chosen Palette: Stone & Teal (Warm Neutral Background with Professional Accents) -->
+    <!-- Application Structure Plan: 
+         1. Hero Section: Clear objective statement.
+         2. Executive Summary: The top 3 recommendations based on the "Sweet Spot" algorithm.
+         3. Interactive Dashboard:
+            - Left Col: Neighborhood List/Cards (The Explorer).
+            - Right Col: Dynamic Data Visualization (Scatter Plot & Synergy Chart).
+         4. Deep Dive Panel: Detailed metrics and SWOT analysis that updates when a neighborhood is selected.
+         5. Custom Weighting Tool: Sliders to adjust the importance of Density vs. Competition to update rankings dynamically.
+         This structure allows the user to go from a high-level overview to specific data points, facilitating decision-making. 
+    -->
+    <!-- Visualization & Content Choices:
+         - Scatter Plot (Chart.js): To visualize the "Blue Ocean" strategy (High Density/Low Competition).
+         - Bar Chart (Chart.js): To visualize "Synergy" (proximity to traditional gyms).
+         - Dynamic Cards: To present qualitative data (residential profile, rent estimates) without clutter.
+         - Color Coding: Green for opportunities, Red for saturation.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0f766e', // Teal 700
+                        secondary: '#78716c', // Stone 500
+                        accent: '#f97316', // Orange 500
+                        bglight: '#fafaf9', // Stone 50
+                        card: '#ffffff',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fafaf9; /* Stone 50 */
+            color: #1c1917; /* Stone 900 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .selected-sector {
+            border-left: 4px solid #0f766e;
+            background-color: #f0fdfa;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-stone-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="h-8 w-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">JJ</div>
+                <h1 class="text-xl font-bold text-stone-800">Goiânia Mat Analysis <span class="text-sm font-normal text-stone-500 ml-2">| Estudo de Viabilidade</span></h1>
+            </div>
+            <nav class="hidden md:flex space-x-6 text-sm font-medium text-stone-600">
+                <a href="#dashboard" class="hover:text-primary transition">Dashboard</a>
+                <a href="#analysis" class="hover:text-primary transition">Análise SWOT</a>
+                <a href="#simulator" class="hover:text-primary transition">Simulador</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow">
+        
+        <!-- Hero Section -->
+        <div class="bg-white pb-8 pt-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-3xl mx-auto">
+                    <h2 class="text-3xl font-extrabold text-stone-900 sm:text-4xl">
+                        Onde abrir sua academia?
+                    </h2>
+                    <p class="mt-4 text-lg text-stone-600">
+                        Cruzamos dados de densidade demográfica, saturação de mercado e sinergia com academias de musculação para identificar as "Zonas de Oportunidade" em Goiânia e região metropolitana.
+                    </p>
+                </div>
+
+                <!-- Top 3 Summary Cards -->
+                <div class="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-3">
+                    <!-- Winner 1 -->
+                    <div class="bg-gradient-to-br from-teal-50 to-white overflow-hidden shadow rounded-lg border border-teal-100 p-5 cursor-pointer card-hover" onclick="selectSector('parque-amazonia')">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-teal-500 rounded-md p-3">
+                                <span class="text-white text-xl font-bold">1</span>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-stone-500 truncate">Melhor Oportunidade (Custo/Benefício)</dt>
+                                    <dd class="flex items-baseline">
+                                        <div class="text-2xl font-semibold text-stone-900">Parque Amazônia</div>
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-sm text-stone-600">
+                            Alta verticalização recente, demanda reprimida e aluguel moderado.
+                        </div>
+                    </div>
+
+                    <!-- Winner 2 -->
+                    <div class="bg-white overflow-hidden shadow rounded-lg border border-stone-200 p-5 cursor-pointer card-hover" onclick="selectSector('jardim-goias')">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-stone-500 rounded-md p-3">
+                                <span class="text-white text-xl font-bold">2</span>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-stone-500 truncate">Melhor Ticket Médio</dt>
+                                    <dd class="flex items-baseline">
+                                        <div class="text-2xl font-semibold text-stone-900">Jardim Goiás</div>
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-sm text-stone-600">
+                            Alta renda, proximidade ao parque, mas concorrência elevada.
+                        </div>
+                    </div>
+
+                    <!-- Winner 3 -->
+                    <div class="bg-white overflow-hidden shadow rounded-lg border border-stone-200 p-5 cursor-pointer card-hover" onclick="selectSector('eldorado')">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-orange-500 rounded-md p-3">
+                                <span class="text-white text-xl font-bold">3</span>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-stone-500 truncate">Zona de Expansão</dt>
+                                    <dd class="flex items-baseline">
+                                        <div class="text-2xl font-semibold text-stone-900">Res. Eldorado</div>
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-sm text-stone-600">
+                            Altíssima densidade de condomínios verticais e público jovem.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div id="dashboard" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            
+            <div class="lg:grid lg:grid-cols-12 lg:gap-8">
+                
+                <!-- Left Column: Navigation & List -->
+                <div class="lg:col-span-4 flex flex-col gap-6">
+                    <div class="bg-white shadow sm:rounded-lg p-6">
+                        <h3 class="text-lg leading-6 font-medium text-stone-900 mb-4">Setores Analisados</h3>
+                        <p class="text-sm text-stone-500 mb-4">Clique para ver detalhes e atualizar os gráficos.</p>
+                        <div class="space-y-2 h-96 overflow-y-auto pr-2" id="sector-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Intro to Analysis -->
+                    <div class="bg-primary bg-opacity-10 border border-primary border-opacity-20 rounded-lg p-4">
+                        <h4 class="font-bold text-primary mb-2">Critérios do Algoritmo</h4>
+                        <ul class="text-sm text-stone-700 space-y-2 list-disc pl-4">
+                            <li><strong>Densidade:</strong> População residente em apartamentos/condomínios.</li>
+                            <li><strong>Concorrência:</strong> Número de Dojos em um raio de 1.5km.</li>
+                            <li><strong>Sinergia:</strong> Academias de musculação próximas (SmartFit, BlueFit, locais).</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Right Column: Visualizations & Detail View -->
+                <div class="lg:col-span-8 space-y-6">
+                    
+                    <!-- Chart Section -->
+                    <div class="bg-white shadow sm:rounded-lg p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-medium text-stone-900">Radar de Mercado</h3>
+                            <div class="flex space-x-2">
+                                <button onclick="updateChartType('scatter')" class="px-3 py-1 text-xs font-semibold rounded bg-stone-100 hover:bg-stone-200 text-stone-600 active-chart-btn" id="btn-scatter">Oceano Azul</button>
+                                <button onclick="updateChartType('bar')" class="px-3 py-1 text-xs font-semibold rounded bg-white hover:bg-stone-100 text-stone-600" id="btn-bar">Sinergia/Musculação</button>
+                            </div>
+                        </div>
+                        
+                        <p class="text-sm text-stone-500 mb-4" id="chart-desc">
+                            Este gráfico relaciona a <strong>Densidade Populacional</strong> (Eixo Y) com a <strong>Concorrência</strong> (Eixo X). O quadrante ideal é o superior esquerdo (Muita gente, poucos concorrentes).
+                        </p>
+
+                        <div class="chart-container">
+                            <canvas id="mainChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Detail View -->
+                    <div id="sector-detail" class="bg-white shadow sm:rounded-lg p-6 transition-all duration-300">
+                        <div class="border-b border-stone-200 pb-4 mb-4 flex justify-between items-start">
+                            <div>
+                                <h2 class="text-2xl font-bold text-stone-900" id="detail-title">Selecione um Setor</h2>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-800 mt-2" id="detail-badge">
+                                    --
+                                </span>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm text-stone-500">Nota de Viabilidade</div>
+                                <div class="text-3xl font-bold text-primary" id="detail-score">--/10</div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="font-semibold text-stone-700 mb-2">Raio-X</h4>
+                                <ul class="space-y-3">
+                                    <li class="flex justify-between text-sm">
+                                        <span class="text-stone-500">Densidade Estimada:</span>
+                                        <span class="font-medium text-stone-900" id="detail-density">--</span>
+                                    </li>
+                                    <li class="flex justify-between text-sm">
+                                        <span class="text-stone-500">Concorrentes Diretos:</span>
+                                        <span class="font-medium text-stone-900" id="detail-comp">--</span>
+                                    </li>
+                                    <li class="flex justify-between text-sm">
+                                        <span class="text-stone-500">Custo Aluguel (Médio):</span>
+                                        <span class="font-medium text-stone-900" id="detail-rent">--</span>
+                                    </li>
+                                    <li class="flex justify-between text-sm">
+                                        <span class="text-stone-500">Academias (Parceiros):</span>
+                                        <span class="font-medium text-stone-900" id="detail-gyms">--</span>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-stone-700 mb-2">Análise Estratégica</h4>
+                                <p class="text-sm text-stone-600 leading-relaxed" id="detail-desc">
+                                    Clique em um setor na lista à esquerda para ver a análise completa.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Simulator Section -->
+        <div id="simulator" class="bg-stone-50 border-t border-stone-200 py-12">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h3 class="text-xl font-bold text-stone-900 mb-2 text-center">Simulador de Preferência</h3>
+                <p class="text-center text-stone-600 mb-8 text-sm">Ajuste os pesos abaixo para encontrar o setor que melhor combina com sua estratégia de negócio.</p>
+                
+                <div class="bg-white rounded-lg shadow p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-2">Importância da Densidade</label>
+                        <input type="range" min="1" max="10" value="7" class="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-teal-600" id="slider-density" oninput="recalculateScores()">
+                        <div class="flex justify-between text-xs text-stone-500 mt-1"><span>Baixa</span><span>Alta</span></div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-2">Aversão à Concorrência</label>
+                        <input type="range" min="1" max="10" value="8" class="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-teal-600" id="slider-competition" oninput="recalculateScores()">
+                        <div class="flex justify-between text-xs text-stone-500 mt-1"><span>Tanto faz</span><span>Quero exclusividade</span></div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-2">Importância do Aluguel Baixo</label>
+                        <input type="range" min="1" max="10" value="5" class="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-teal-600" id="slider-rent" oninput="recalculateScores()">
+                        <div class="flex justify-between text-xs text-stone-500 mt-1"><span>Pode ser caro</span><span>Tem que ser barato</span></div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 text-center">
+                    <p class="text-sm font-medium text-stone-700">Recomendação Ajustada:</p>
+                    <div id="simulated-winner" class="text-2xl font-bold text-primary mt-1">--</div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="bg-stone-900 text-stone-400 py-8">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="text-sm">&copy; 2023 Análise de Mercado Esportivo Goiânia. Dados simulados para fins demonstrativos.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- DATASET ---
+        // Simulated market research data for Goiania neighborhoods
+        // Density: 1-10 (10 = Very Dense)
+        // Competition: Number of direct competitors
+        // Gyms: Number of weightlifting gyms (Synergy)
+        // Rent: 1-10 (10 = Most Expensive)
+        const sectors = [
+            {
+                id: 'bueno',
+                name: 'Setor Bueno',
+                density: 10,
+                competition: 12,
+                gyms: 15,
+                rent: 9,
+                badge: 'Alta Renda / Saturado',
+                desc: 'O coração nobre de Goiânia. Altíssima densidade vertical, mas extremamente saturado de academias (Gracie Barra, Alliance, etc). Aluguel muito caro. Bom apenas para quem tem muito capital para brigar por alunos premium.'
+            },
+            {
+                id: 'marista',
+                name: 'Setor Marista',
+                density: 8,
+                competition: 10,
+                gyms: 12,
+                rent: 10,
+                badge: 'Elite / Saturado',
+                desc: 'Público classe A+. Ótimo ticket médio, mas custos fixos proibitivos para quem está começando. A concorrência é consolidada e fiel. Sinergia alta com Crossfit e academias boutique.'
+            },
+            {
+                id: 'jardim-goias',
+                name: 'Jardim Goiás',
+                density: 9,
+                competition: 8,
+                gyms: 10,
+                rent: 9,
+                badge: 'Premium / Oportunidade',
+                desc: 'Região do Parque Flamboyant. Muita gente jovem e famílias. Caro, mas com um público que consome muito esporte. Concorrência existe, mas a demanda é gigante.'
+            },
+            {
+                id: 'parque-amazonia',
+                name: 'Parque Amazônia',
+                density: 8,
+                competition: 3,
+                gyms: 8,
+                rent: 6,
+                badge: 'Ouro / Alta Viabilidade',
+                desc: 'A "menina dos olhos" atual. Sofrendo verticalização intensa (novos prédios todo mês). População de classe média/média-alta. Poucas academias de Jiu-Jitsu de grande porte. Proximidade com Buriti Shopping.'
+            },
+            {
+                id: 'eldorado',
+                name: 'Residencial Eldorado',
+                density: 9,
+                competition: 4,
+                gyms: 7,
+                rent: 6,
+                badge: 'Densidade Extrema / Jovem',
+                desc: 'Um "formigueiro" de prédios. Densidade populacional altíssima em área pequena. Público jovem. Excelente para horários de pico (manhã/noite). Concorrência moderada.'
+            },
+            {
+                id: 'oeste',
+                name: 'Setor Oeste',
+                density: 7,
+                competition: 7,
+                gyms: 8,
+                rent: 8,
+                badge: 'Tradicional / Estável',
+                desc: 'Bairro tradicional, público mais velho que Marista/Bueno. Bom para turmas kids e público executivo. Mercado estável, sem crescimento explosivo.'
+            },
+            {
+                id: 'pedro-ludovico',
+                name: 'Pedro Ludovico',
+                density: 7,
+                competition: 5,
+                gyms: 6,
+                rent: 5,
+                badge: 'Custo-Benefício',
+                desc: 'Setor de apoio ao Marista, mas com aluguel muito mais barato. Boa opção para captar quem mora ali e não quer pagar o preço do Marista. Acesso fácil.'
+            },
+            {
+                id: 'negrao-de-lima',
+                name: 'Negrão de Lima',
+                density: 6,
+                competition: 2,
+                gyms: 4,
+                rent: 4,
+                badge: 'Emergente / Baixo Custo',
+                desc: 'Região próxima ao centro com muitos condomínios novos (MRV etc). Baixíssima concorrência. O ticket médio será menor, mas o volume de alunos pode ser alto.'
+            },
+            {
+                id: 'aparecida-centro',
+                name: 'Ap. de Goiânia (Centro)',
+                density: 6,
+                competition: 3,
+                gyms: 5,
+                rent: 3,
+                badge: 'Volume / Popular',
+                desc: 'Mercado de volume. Aluguel barato, muita gente. Competição é mais pulverizada entre equipes menores. Excelente para projeto focado em competição e base.'
+            },
+            {
+                id: 'alphaville',
+                name: 'Região Alphaville',
+                density: 3,
+                competition: 2,
+                gyms: 3,
+                rent: 7,
+                badge: 'Nicho Específico',
+                desc: 'Baixa densidade (condomínios horizontais), mas ticket altíssimo. Exige uma estrutura impecável. O aluno não vai a pé, precisa de estacionamento amplo.'
+            }
+        ];
+
+        let currentChartInstance = null;
+        let currentChartType = 'scatter'; // 'scatter' or 'bar'
+
+        // --- INIT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderSectorList();
+            initChart();
+            selectSector('parque-amazonia'); // Default selection
+            recalculateScores();
+        });
+
+        // --- UI FUNCTIONS ---
+
+        function renderSectorList() {
+            const listContainer = document.getElementById('sector-list');
+            listContainer.innerHTML = '';
+
+            sectors.forEach(sector => {
+                const item = document.createElement('div');
+                item.className = `p-3 rounded-md cursor-pointer hover:bg-stone-100 transition border border-transparent`;
+                item.id = `list-item-${sector.id}`;
+                item.onclick = () => selectSector(sector.id);
+                item.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="font-medium text-stone-800">${sector.name}</span>
+                        <span class="text-xs px-2 py-1 bg-white border border-stone-200 rounded text-stone-500">${sector.competition} Concorrentes</span>
+                    </div>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+
+        function selectSector(id) {
+            // UI Selection Styling
+            document.querySelectorAll('#sector-list > div').forEach(el => {
+                el.classList.remove('selected-sector', 'bg-teal-50');
+            });
+            const selectedItem = document.getElementById(`list-item-${id}`);
+            if (selectedItem) selectedItem.classList.add('selected-sector');
+
+            // Find Data
+            const data = sectors.find(s => s.id === id);
+            if (!data) return;
+
+            // Calculate Score (Simple Algorithm for display)
+            // Score = (Density * 1.5) + (Gyms * 1) - (Competition * 1.2) - (Rent * 0.5) + Offset
+            let rawScore = (data.density * 1.5) + (data.gyms * 0.8) - (data.competition * 1.0) - (data.rent * 0.5);
+            // Normalize roughly to 0-10
+            let score = Math.min(10, Math.max(1, (rawScore + 5).toFixed(1)));
+
+            // Update DOM
+            document.getElementById('detail-title').innerText = data.name;
+            document.getElementById('detail-badge').innerText = data.badge;
+            document.getElementById('detail-score').innerText = score + "/10";
+            
+            // Stats
+            document.getElementById('detail-density').innerText = renderStars(data.density);
+            document.getElementById('detail-comp').innerText = data.competition + " Academias";
+            document.getElementById('detail-rent').innerText = renderCost(data.rent);
+            document.getElementById('detail-gyms').innerText = data.gyms + " Locais";
+            
+            document.getElementById('detail-desc').innerText = data.desc;
+
+            // Highlight in Chart if chart exists
+            if (currentChartInstance) {
+                updateChartHighlight(id);
+            }
+        }
+
+        function renderStars(count) {
+            return "★".repeat(count) + "☆".repeat(10 - count);
+        }
+
+        function renderCost(count) {
+            if (count > 8) return "Muito Alto ($$$$)";
+            if (count > 6) return "Alto ($$$)";
+            if (count > 4) return "Médio ($$)";
+            return "Baixo ($)";
+        }
+
+        // --- CHART FUNCTIONS ---
+
+        function updateChartType(type) {
+            currentChartType = type;
+            
+            // Toggle Buttons
+            document.getElementById('btn-scatter').className = type === 'scatter' 
+                ? "px-3 py-1 text-xs font-semibold rounded bg-stone-100 hover:bg-stone-200 text-stone-600 border border-stone-300 shadow-inner" 
+                : "px-3 py-1 text-xs font-semibold rounded bg-white hover:bg-stone-100 text-stone-600";
+            
+            document.getElementById('btn-bar').className = type === 'bar' 
+                ? "px-3 py-1 text-xs font-semibold rounded bg-stone-100 hover:bg-stone-200 text-stone-600 border border-stone-300 shadow-inner" 
+                : "px-3 py-1 text-xs font-semibold rounded bg-white hover:bg-stone-100 text-stone-600";
+
+            // Update Description
+            const desc = document.getElementById('chart-desc');
+            if (type === 'scatter') {
+                desc.innerHTML = 'Este gráfico relaciona a <strong>Densidade Populacional</strong> (Eixo Y) com a <strong>Concorrência</strong> (Eixo X). O quadrante ideal é o <strong>superior esquerdo</strong> (Muita gente, poucos concorrentes).';
+            } else {
+                desc.innerHTML = 'Este gráfico mostra o número de <strong>Academias de Musculação</strong> próximas. Isso indica "Sinergia", pois praticantes de musculação são potenciais clientes de Jiu-Jitsu.';
+            }
+
+            initChart();
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            
+            if (currentChartInstance) {
+                currentChartInstance.destroy();
+            }
+
+            if (currentChartType === 'scatter') {
+                createScatterChart(ctx);
+            } else {
+                createBarChart(ctx);
+            }
+        }
+
+        function createScatterChart(ctx) {
+            currentChartInstance = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Setores',
+                        data: sectors.map(s => ({
+                            x: s.competition,
+                            y: s.density,
+                            id: s.id, // custom prop
+                            name: s.name // custom prop
+                        })),
+                        backgroundColor: function(context) {
+                            // High Density (Y > 7) AND Low Competition (X < 5) = GREEN (Opportunity)
+                            const val = context.raw;
+                            if (val && val.y >= 7 && val.x <= 5) return '#0f766e'; // teal
+                            if (val && val.x > 8) return '#ef4444'; // red (saturated)
+                            return '#f97316'; // orange (average)
+                        },
+                        pointRadius: 8,
+                        pointHoverRadius: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.raw.name;
+                                },
+                                afterLabel: function(context) {
+                                    return `Concorrência: ${context.raw.x} | Densidade: ${context.raw.y}`;
+                                }
+                            }
+                        },
+                        legend: { display: false },
+                        annotation: {
+                            // Note: Annotation plugin not loaded, using basic implementation via bg colors
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Concorrência (Nº Academias)' },
+                            min: 0,
+                            max: 15
+                        },
+                        y: {
+                            title: { display: true, text: 'Densidade Populacional (0-10)' },
+                            min: 0,
+                            max: 12
+                        }
+                    },
+                    onClick: (e, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const sectorId = sectors[index].id;
+                            selectSector(sectorId);
+                        }
+                    }
+                }
+            });
+        }
+
+        function createBarChart(ctx) {
+            // Sort by Gyms desc
+            const sorted = [...sectors].sort((a,b) => b.gyms - a.gyms);
+
+            currentChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sorted.map(s => s.name),
+                    datasets: [{
+                        label: 'Academias de Musculação Próximas',
+                        data: sorted.map(s => s.gyms),
+                        backgroundColor: '#0f766e',
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Qtd. Academias' }
+                        },
+                        x: {
+                            ticks: {
+                                autoSkip: false,
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    },
+                    onClick: (e, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            // Need to find ID from sorted array
+                            const sectorId = sorted[index].id;
+                            selectSector(sectorId);
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChartHighlight(id) {
+            // This visual highlight logic depends heavily on chart type updates.
+            // For simplicity in this demo, we rely on the click interaction logic already present.
+            // In a fuller app, we would update the 'backgroundColor' array of the dataset to highlight the selected point.
+        }
+
+        // --- SIMULATOR LOGIC ---
+
+        function recalculateScores() {
+            const wDensity = parseInt(document.getElementById('slider-density').value);
+            const wComp = parseInt(document.getElementById('slider-competition').value); // Higher value means user HATES competition
+            const wRent = parseInt(document.getElementById('slider-rent').value); // Higher value means user NEEDS low rent
+
+            let bestSector = null;
+            let highestScore = -Infinity;
+
+            sectors.forEach(s => {
+                // Algorithm:
+                // Density adds points (weighted)
+                // Competition removes points (weighted)
+                // Rent removes points (weighted)
+                // Gyms add small points (fixed weight 2)
+                
+                // Normalizing factors approx:
+                // Density (1-10) * w(1-10) -> max 100
+                // Comp (2-12) * w(1-10) -> max 120 (negative)
+                // Rent (3-10) * w(1-10) -> max 100 (negative)
+                
+                const score = (s.density * wDensity) + (s.gyms * 3) - (s.competition * wComp) - (s.rent * wRent);
+                
+                if (score > highestScore) {
+                    highestScore = score;
+                    bestSector = s;
+                }
+            });
+
+            const winnerDiv = document.getElementById('simulated-winner');
+            if (bestSector) {
+                winnerDiv.innerText = bestSector.name;
+                winnerDiv.classList.add('animate-pulse');
+                setTimeout(() => winnerDiv.classList.remove('animate-pulse'), 500);
+            }
+        }
+
+    </script>
+</body>
+</html>
